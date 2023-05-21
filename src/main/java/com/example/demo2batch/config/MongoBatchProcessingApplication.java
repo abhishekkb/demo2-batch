@@ -35,6 +35,7 @@ import java.time.*;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @EnableBatchProcessing
@@ -79,10 +80,12 @@ public class MongoBatchProcessingApplication {
     @Bean
     public ItemWriter<A> itemWriter() {
         return items -> {
+            log.info("removing {} items, corrIds = {}", items.size(), items.stream().map(A::getCorrId).collect(Collectors.toList()));
             for (A item : items) {
                 String corrId = item.getCorrId();
-                var a = mongoTemplate.remove(Query.query(Criteria.where("corrId").is(corrId)), "B");
-                log.info("corrId - {}, deleted count - {}", corrId, a.getDeletedCount());
+//                var a = mongoTemplate.remove(Query.query(Criteria.where("corrId").is(corrId)), "B");
+                mongoTemplate.findAndRemove(Query.query(Criteria.where("corrId").is(corrId)), B.class);
+                log.info("document with corrId on collectionB is removed - corrId {}",  corrId);
             }
         };
     }

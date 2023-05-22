@@ -21,20 +21,15 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
-import org.springframework.batch.item.data.builder.MongoItemReaderBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.time.*;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,7 +44,6 @@ public class MongoBatchProcessingApplication {
 
     private final MongoTemplate mongoTemplate;
 
-    private final MongoOperations mongoOperations;
     @Bean
     public ItemReader<A> itemReader() {
         LocalDateTime currentDateTime = LocalDateTime.now();
@@ -68,8 +62,6 @@ public class MongoBatchProcessingApplication {
         itemReader.setQuery(query);
         itemReader.setTargetType(A.class);
         return itemReader;
-
-//        return new MongoItemReader<>(A.class, mongoOperations, query, "collectionA");
     }
 
     @Bean
@@ -83,7 +75,6 @@ public class MongoBatchProcessingApplication {
             log.info("removing {} items, corrIds = {}", items.size(), items.stream().map(A::getCorrId).collect(Collectors.toList()));
             for (A item : items) {
                 String corrId = item.getCorrId();
-//                var a = mongoTemplate.remove(Query.query(Criteria.where("corrId").is(corrId)), "B");
                 mongoTemplate.findAndRemove(Query.query(Criteria.where("corrId").is(corrId)), B.class);
                 log.info("document with corrId on collectionB is removed - corrId {}",  corrId);
             }
@@ -115,11 +106,6 @@ public class MongoBatchProcessingApplication {
                 .build();
         FlowJobBuilder flowJobBuilder = jobBuilder.start(flow).end();
         return flowJobBuilder.build();
-//        return jobBuilderFactory.get("job")
-//                .start(decider).on("EXECUTE").to(step)
-//                .from(decider).on("*").end()
-//                .end()
-//                .build();
     }
 
     @Bean
@@ -139,8 +125,8 @@ public class MongoBatchProcessingApplication {
         public FlowExecutionStatus decide(JobExecution jobExecution, StepExecution stepExecution) {
             LocalDate currentDate = LocalDate.now();
             DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-//            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
-            if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+//            if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
                 return new FlowExecutionStatus("EXECUTE");
             } else {
                 return new FlowExecutionStatus("SKIP");
